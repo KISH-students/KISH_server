@@ -1,20 +1,20 @@
 package org.kish.database.table;
 
 public class Table {
-    private final String name, createQuery;
+    private final String tableName, createQuery;
 
     public Table(){
-        this.name = "";
+        this.tableName = "";
         this.createQuery = "";
     }
 
-    public Table(String name, String createQuery){
-        this.name = name;
+    public Table(String tableName, String createQuery){
+        this.tableName = tableName;
         this.createQuery = createQuery;
     }
 
-    public String getName() {
-        return name;
+    public String getTableName() {
+        return tableName;
     }
 
     public String getCreateQuery() {
