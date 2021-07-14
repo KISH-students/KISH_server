@@ -7,7 +7,6 @@ public class BambooPostRecommendsTable extends Table{
                         "    `recommend_id` INT NOT NULL AUTO_INCREMENT,\n" +
                         "    `post_id` INT NOT NULL,\n" +
                         "    `recommend_owner_id` VARCHAR(500) NOT NULL,\n" +
-                        "    `recommend_value` BOOLEAN NOT NULL,\n" +
                         "    PRIMARY KEY(`recommend_id`)\n" +
                         ") ENGINE = InnoDB;");
     }
