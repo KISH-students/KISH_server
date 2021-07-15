@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.kish.KishServer;
@@ -32,6 +33,7 @@ public class KishMagazineApiController {
     private static final Gson gson = new Gson();
     private final File libraryResourceDir;
     private final HashMap<String, List<Object>> cachedHome = new HashMap<>();
+    private final HashMap<String, List<Object>> hiddenCachedHome = new HashMap<>();
     @Autowired
     private CacheManager cacheManager;
 
@@ -118,7 +120,7 @@ public class KishMagazineApiController {
         MainLogger.warn("KISH MAGAZINE home 캐싱 작업 시작 ...");
         for (Object parent : gson.fromJson(getParentListApi(), ArrayList.class)) {
             for (Object category : gson.fromJson(getCategoryListApi((String) parent), ArrayList.class)) {
-                homeApi((String) parent, (String) category);
+                homeApi((String) parent, (String) category, false);
             }
         }
         MainLogger.warn("KISH MAGAZINE home 캐싱 완료.");
@@ -126,14 +128,19 @@ public class KishMagazineApiController {
 
     @GetMapping(value = "home")
     @ResponseBody
-    public String homeApi(@RequestParam String parent, @RequestParam String category) {
+    public String homeApi(@RequestParam String parent,
+                          @RequestParam String category,
+                          @RequestParam(required = false, defaultValue = "false") boolean ios) {
         if (category.equals("all")) {
             ArrayList<Object> result = new ArrayList<>();
             for (Object childCategory : gson.fromJson(getCategoryListApi(parent), ArrayList.class)) {
                 String key = parent + ":" + childCategory;
 
-                if(cachedHome.containsKey(key)) {
+                if (cachedHome.containsKey(key)) {
                     result.addAll(cachedHome.get(key));
+                }
+                if (!ios && hiddenCachedHome.containsKey(key)) {
+                    result.addAll(hiddenCachedHome.get(key));
                 }
             }
 
@@ -142,14 +149,27 @@ public class KishMagazineApiController {
         }
 
         String key = parent + ":" + category;
-        
-        if(cachedHome.containsKey(key)) {
-            List<Object> list = cachedHome.get(key);
-            Collections.shuffle(list);
-            return gson.toJson(list);
+
+        if (cachedHome.containsKey(key) || hiddenCachedHome.containsKey(key)) {
+            ArrayList<Object> result = new ArrayList<>();
+            List<Object> cachedHomeResult = cachedHome.get(key);
+            List<Object> hiddenCachedHomeResult = hiddenCachedHome.get(key);
+            System.out.println("히캐: " + hiddenCachedHome.get(key).size());
+            if (cachedHome.get(key) != null) {
+                System.out.println("너캐: " + cachedHome.get(key).size());
+            }
+            if (cachedHomeResult != null) {
+                result.addAll(cachedHomeResult);
+            }
+            if (!ios && hiddenCachedHomeResult != null) {
+                result.addAll(hiddenCachedHomeResult);
+            }
+            Collections.shuffle(result);
+            return gson.toJson(result);
         } else {
             ArrayList<File> subFileList = (ArrayList<File>) Utils.getAllSubFiles(
                     new File(this.libraryResourceDir.getPath() + File.separator + parent + File.separator + category));
+            boolean shouldHide;
 
             PDFTextStripper stripper;
             try {
@@ -160,7 +180,13 @@ public class KishMagazineApiController {
             }
 
             ArrayList<Object> result = new ArrayList<>();
+            ArrayList<Object> hiddenResult = new ArrayList<>();
             for (File file : subFileList) {
+                String name = file.getName();
+                shouldHide = (name.contains("${hidden}") || StringUtils.containsIgnoreCase(name, "covid")
+                        || name.contains("코로나")
+                        || name.contains("19")
+                        || StringUtils.containsIgnoreCase(name, "corona"));
                 String extension = FilenameUtils.getExtension(file.getName());
                 if (extension.equals("pdf")) {
                     try {
@@ -169,6 +195,12 @@ public class KishMagazineApiController {
 
                         if (!pdf.isEncrypted()) {
                             content = stripper.getText(pdf);
+                            if (!shouldHide) {
+                                shouldHide = (StringUtils.containsIgnoreCase(content, "covid")
+                                        || content.contains("코로나")
+                                        || content.contains("19")
+                                        || StringUtils.containsIgnoreCase(content, "corona"));
+                            }
                         } else {
                             MainLogger.warn(file.getAbsolutePath() + "는 암호화 되어있어 읽을 수 없습니다.");
                             continue;
@@ -176,14 +208,19 @@ public class KishMagazineApiController {
 
                         File imgFile = new File(file.getParentFile().getPath() +
                                 File.separator + FilenameUtils.getBaseName(file.getName()) + ".png");
+
+                        Object article;
                         if (content.trim().isEmpty()) {
-                            ImgArticle imgArticle = new ImgArticle(file);
-                            result.add(imgArticle);
+                            article = new ImgArticle(file);
                         } else if (ThreadLocalRandom.current().nextDouble() < 0.4 && imgFile.exists()) {
-                            TextArticleWithImg article = new TextArticleWithImg(file, content);
-                            result.add(article);
+                            article = new TextArticleWithImg(file, content);
                         } else {
-                            TextArticle article = new TextArticle(file, content);
+                            article = new TextArticle(file, content);
+                        }
+
+                        if (shouldHide) {
+                            hiddenResult.add(article);
+                        } else {
                             result.add(article);
                         }
 
@@ -195,7 +232,8 @@ public class KishMagazineApiController {
             }
 
             this.cachedHome.put(key, result);
-            return homeApi(parent, category);
+            this.hiddenCachedHome.put(key, hiddenResult);
+            return homeApi(parent, category, ios);
         }
     }
 
