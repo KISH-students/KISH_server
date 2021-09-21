@@ -1,5 +1,6 @@
 package org.kish.web;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -9,8 +10,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.kish.KishServer;
 import org.kish.MainLogger;
+import org.kish.database.KishDAO;
 import org.kish.entity.RequestResult;
 import org.kish.utils.WebUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,9 +25,11 @@ import java.util.HashMap;
 
 @SuppressWarnings("unchecked")
 @Controller
-@RequestMapping("/api/library")
+@RequestMapping(value = "/api/library")
 public class LibraryApiController {
+    public static final Gson gson = new Gson();
     private final KishServer main;
+    @Autowired private KishDAO kishDAO;
 
     public HashMap<String, String> session = new HashMap<>();
 
@@ -76,7 +81,8 @@ public class LibraryApiController {
     }
 
     @PostMapping(value = "/login")
-    public @ResponseBody String login(@RequestParam String uuid, @RequestParam String id, @RequestParam String pwd){
+    public @ResponseBody String login(@RequestParam String uuid, @RequestParam String fcm,
+                                      @RequestParam String id, @RequestParam String pwd){
         String parameters;
         parameters = "REQ_URL=";
         parameters += "&MEMBER_ID=" + id;
@@ -86,21 +92,32 @@ public class LibraryApiController {
         if (response == null) {
             return serviceTerminated("3");
         }
-        return response.getResponse();
+
+        String seq = "";
+        String jsonResponse = response.getResponse();
+        Object resultCode = gson.fromJson(jsonResponse, HashMap.class).get("result");
+        if ("0".equals(String.valueOf(resultCode))) {
+            seq = (String) getInfo(uuid).get("seq");
+            kishDAO.registerUser(seq, fcm);
+        }
+
+        HashMap map = gson.fromJson(jsonResponse, HashMap.class);
+        map.put("seq", seq);
+        return gson.toJson(map);
     }
 
     @RequestMapping(value = "/getInfo", method = RequestMethod.GET)
-    public @ResponseBody String getInfo(@RequestParam String uuid){
+    public @ResponseBody JSONObject getInfo(@RequestParam String uuid){
         JSONObject json = new JSONObject();
         if(!this.session.containsKey(uuid)){
             json.put("result", "1");
             json.put("message", "잘못된 요청입니다.");
-            return json.toJSONString();
+            return json;
         }
 
         String response = WebUtils.getRequest("http://lib.hanoischool.net:81/front/mypage/mypage", this.getCookie(uuid)).getResponse();
         if (response == null) {
-            return serviceTerminated("3");
+            //return serviceTerminated("3");
         }
 
         Document doc = Jsoup.parse(response);
@@ -108,12 +125,12 @@ public class LibraryApiController {
         if(myPageBox.size() < 2){
             json.put("result", "2");
             json.put("message", "요청이 만료되었습니다.");
-            return json.toJSONString();
+            //return json.toJSONString();
         }
         Elements myInfoElements = myPageBox.get(0).select("span");
         Elements loanInfoElements = myPageBox.get(1).select("span");
         json.put("result", "0");
-        json.put("id", myInfoElements.get(0).text());
+        json.put("seq", myInfoElements.get(0).text());
         json.put("name", myInfoElements.get(1).text());
         json.put("grade", myInfoElements.get(2).text());
         json.put("numberLoanableBooks", myInfoElements.get(3).text());
@@ -122,7 +139,7 @@ public class LibraryApiController {
         json.put("numberLoanBooks", loanInfoElements.get(0).text());
         json.put("numberOverdueBooks", loanInfoElements.get(1).text());
         json.put("numberReservedBooks", loanInfoElements.get(2).text());
-        return json.toJSONString();
+        return json;
     }
 
     @RequestMapping(value = "/getLoanedBooks")

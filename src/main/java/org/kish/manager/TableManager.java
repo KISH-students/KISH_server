@@ -25,6 +25,11 @@ public class TableManager{
         this.addTable(new ExamTable());
         this.addTable(new LunchTable());
         this.addTable(new KishMenuInfoTable());
+        this.addTable(new KishUsersTable());
+        this.addTable(new BambooPostsTable());
+        this.addTable(new BambooCommentsTable());
+        this.addTable(new BambooPostLikesTable());
+        this.addTable(new BambooCommentLikesTable());
     }
 
     public void checkAllTable(){

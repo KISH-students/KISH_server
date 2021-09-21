@@ -144,7 +144,7 @@ public class KishDAO {
                 "AND '" + endDate + "'";
         return jdbcTemplate.query(query, new LunchMenuMapper());
     }
-    
+
     public void updateLunchMenus(boolean async, ArrayList<LunchMenu> list){
         if(async) {
             updateLunchMenus(false, list);
@@ -164,5 +164,34 @@ public class KishDAO {
         }
 
         jdbcTemplate.batchUpdate(query, params);
+    }
+
+    public void registerUser(String seq, String fcm) {
+        String sql = "INSERT INTO `kish_users` SELECT NULL,?,? FROM DUAL" +
+                " WHERE NOT EXISTS (SELECT * FROM `kish_users` WHERE `user_id` = ? AND `fcm_token` = ?);";
+
+        jdbcTemplate.update(sql, seq, fcm, seq, fcm);
+    }
+
+    public boolean isValidUser(String seq, String fcm) {
+        List<String> fcmList = this.getUserFcm(seq);
+
+        if (fcmList.contains(fcm)) {    // 유저의 계정에 등록된 fcm일 경우
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public List<String> getUserFcm(String seq) {
+        String sql = "SELECT * FROM `kish_users` WHERE `user_id`=?";
+        List<Map<String, Object>> items = jdbcTemplate.queryForList(sql, seq);
+
+        ArrayList<String> fcmList = new ArrayList<>();
+        for (Map<String, Object> item : items) {
+            fcmList.add((String) item.get("fcm_token"));
+        }
+
+        return fcmList;
     }
 }

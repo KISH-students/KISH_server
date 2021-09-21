@@ -14,10 +14,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.context.support.RequestHandledEvent;
+import org.springframework.web.filter.CharacterEncodingFilter;
 
 import java.io.File;
 import java.util.Properties;
@@ -87,6 +89,14 @@ public class KishServer {
         CAC.getBean(KishMagazineApiController.class).cacheHome(true);
 
         MainLogger.info("kish server가 준비되었음.");
+    }
+
+    @Bean
+    public CharacterEncodingFilter characterEncodingFilter() {
+        CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
+        characterEncodingFilter.setEncoding("UTF-8");
+        characterEncodingFilter.setForceEncoding(true);
+        return characterEncodingFilter;
     }
 
     public static void shutdown(boolean force, Object reason){
