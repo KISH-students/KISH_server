@@ -31,6 +31,7 @@ public class TableManager{
         this.addTable(new BambooPostLikesTable());
         this.addTable(new BambooCommentLikesTable());
         this.addTable(new BambooPostBackupTable());
+        this.addTable(new BambooCommentBackupTable());
     }
 
     public void checkAllTable(){
