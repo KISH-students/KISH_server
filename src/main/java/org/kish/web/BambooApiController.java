@@ -73,6 +73,23 @@ public class BambooApiController {
     }
 
     @ResponseBody
+    @RequestMapping("/deletePost")
+    public String deletePost(@RequestParam String seq, @RequestParam String fcm,
+                             @RequestParam int postId) {
+        LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+        if (!kishDAO.isValidUser(seq, fcm)) {
+            response.put("success", false);
+            response.put("message", "계정을 확인할 수 없습니다.");
+            return gson.toJson(response);
+        }
+
+        bambooDao.deletePost(seq, postId);
+        response.put("success", true);
+        response.put("message", "요청이 처리되었습니다");
+        return gson.toJson(response);
+    }
+
+    @ResponseBody
     @RequestMapping("/writeComment")
     public String writeComment(@RequestParam String seq,  @RequestParam String fcm,
                                @RequestParam int postId, @RequestParam String content) {

@@ -68,13 +68,28 @@ public class BambooDao {
     }
 
     public Map<String, Object> getPost(String seq, int postId) {
-        String sql = "SELECT bamboo_id, bamboo_content, bamboo_date FROM `bamboo_posts` WHERE bamboo_id = ?";
+        String sql = "SELECT `bamboo_author`, bamboo_id, bamboo_content, bamboo_date FROM `bamboo_posts` WHERE bamboo_id = ?";
         Set<String> likers = getPostLikers(postId);
         Map<String, Object> post = jdbcTemplate.queryForList(sql, postId).get(0);
+        String author = (String) post.get("bamboo_author");
 
         post.put("liked", likers.contains(seq));
         post.put("likeCount", likers.size());
+        post.remove("bamboo_author");
+        post.put("IAmAuthor", seq.equals(author));
         return post;
+    }
+
+    public void deletePost(String seq, int postId) {
+        String sql = "SELECT `bamboo_id` FROM `bamboo_posts` WHERE `bamboo_author`=? AND `bamboo_id`=?";
+        List temp = jdbcTemplate.queryForList(sql, seq, postId);
+        if (temp.isEmpty()) return;
+
+        sql = "INSERT INTO bamboo_post_backup SELECT * FROM bamboo_posts WHERE `bamboo_id`=?";
+        jdbcTemplate.update(sql, postId);
+
+        sql = "DELETE FROM `bamboo_posts` WHERE `bamboo_id`=?";
+        jdbcTemplate.update(sql, postId);
     }
 
     public List<Map<String, Object>> getComments(String seq, int postId) {
