@@ -23,22 +23,20 @@ public class KishDAO {
         KishServer.jdbcTemplate = this.jdbcTemplate;
     }
 
-    public int addAdmin(String deviceID){
+    public int addAdmin(String seq){
         String query
-                = "INSERT INTO `kish_admin` (`device_id`) VALUES (?);";
-        return jdbcTemplate.update(query, deviceID);
+                = "INSERT INTO `kish_admin` (`seq`) VALUES (?);";
+        return jdbcTemplate.update(query, seq);
     }
 
-    public int removeAdmin(String deviceID){
-        String query = "DELETE FROM `kish_admin` WHERE `device_id` = ?";
-        return jdbcTemplate.update(query, deviceID);
+    public int removeAdmin(String seq){
+        String query = "DELETE FROM `kish_admin` WHERE `seq` = ?";
+        return jdbcTemplate.update(query, seq);
     }
 
-    public boolean isAdmin(String deviceID){
-        String query
-                = "SELECT * FROM `kish_admin` " +
-                "WHERE `device_id` = '" + deviceID + "'";
-        return jdbcTemplate.queryForList(query).size() > 0;
+    public boolean isAdmin(String seq){
+        String query = "SELECT * FROM `kish_admin` WHERE `seq`=?";
+        return jdbcTemplate.queryForList(query, seq).size() > 0;
     }
 
     public List<String> getDeviceIdByTopic(String topic){

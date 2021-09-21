@@ -2,6 +2,7 @@ package org.kish.database;
 
 import org.kish.KishServer;
 import org.kish.MainLogger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +12,8 @@ import java.util.*;
 @Repository
 public class BambooDao {
     public JdbcTemplate jdbcTemplate;
+    @Autowired
+    public KishDAO kishDAO;
 
     public BambooDao(DataSource dataSource){
         this.jdbcTemplate = new JdbcTemplate(dataSource);
@@ -82,8 +85,10 @@ public class BambooDao {
 
     public void deletePost(String seq, int postId) {
         String sql = "SELECT `bamboo_id` FROM `bamboo_posts` WHERE `bamboo_author`=? AND `bamboo_id`=?";
-        List temp = jdbcTemplate.queryForList(sql, seq, postId);
-        if (temp.isEmpty()) return;
+        if (!kishDAO.isAdmin(seq)) {
+            List temp = jdbcTemplate.queryForList(sql, seq, postId);
+            if (temp.isEmpty()) return;
+        }
 
         sql = "INSERT INTO bamboo_post_backup SELECT * FROM bamboo_posts WHERE `bamboo_id`=?";
         jdbcTemplate.update(sql, postId);
@@ -94,8 +99,10 @@ public class BambooDao {
 
     public void deleteComment(String seq, int commentId) {
         String sql = "SELECT `comment_id` FROM `bamboo_comments` WHERE `comment_author_id`=? AND `comment_id`=?";
-        List temp = jdbcTemplate.queryForList(sql, seq, commentId);
-        if (temp.isEmpty()) return;
+        if (!kishDAO.isAdmin(seq)) {
+            List temp = jdbcTemplate.queryForList(sql, seq, commentId);
+            if (temp.isEmpty()) return;
+        }
 
         sql = "INSERT INTO bamboo_comment_backup SELECT * FROM bamboo_comments WHERE `comment_id`=?";
         jdbcTemplate.update(sql, commentId);

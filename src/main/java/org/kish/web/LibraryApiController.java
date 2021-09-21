@@ -103,6 +103,7 @@ public class LibraryApiController {
 
         HashMap map = gson.fromJson(jsonResponse, HashMap.class);
         map.put("seq", seq);
+        map.put("admin", kishDAO.isAdmin(seq));
         return gson.toJson(map);
     }
 
