@@ -154,10 +154,6 @@ public class KishMagazineApiController {
             ArrayList<Object> result = new ArrayList<>();
             List<Object> cachedHomeResult = cachedHome.get(key);
             List<Object> hiddenCachedHomeResult = hiddenCachedHome.get(key);
-            System.out.println("히캐: " + hiddenCachedHome.get(key).size());
-            if (cachedHome.get(key) != null) {
-                System.out.println("너캐: " + cachedHome.get(key).size());
-            }
             if (cachedHomeResult != null) {
                 result.addAll(cachedHomeResult);
             }
