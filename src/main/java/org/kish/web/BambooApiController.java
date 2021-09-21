@@ -83,7 +83,10 @@ public class BambooApiController {
             return gson.toJson(response);
         }
 
-        bambooDao.deletePost(seq, postId);
+        try {
+            bambooDao.deletePost(seq, postId);
+        } catch(Exception ignore) {
+        }
         response.put("success", true);
         response.put("message", "요청이 처리되었습니다");
         return gson.toJson(response);
@@ -100,7 +103,10 @@ public class BambooApiController {
             return gson.toJson(response);
         }
 
-        bambooDao.deleteComment(seq, commentId);
+        try {
+            bambooDao.deleteComment(seq, commentId);
+        } catch (Exception ignore) {
+        }
         response.put("success", true);
         response.put("message", "요청이 처리되었습니다");
         return gson.toJson(response);
