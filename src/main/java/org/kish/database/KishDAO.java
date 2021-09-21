@@ -23,22 +23,20 @@ public class KishDAO {
         KishServer.jdbcTemplate = this.jdbcTemplate;
     }
 
-    public int addAdmin(String deviceID){
+    public int addAdmin(String seq){
         String query
-                = "INSERT INTO `kish_admin` (`device_id`) VALUES (?);";
-        return jdbcTemplate.update(query, deviceID);
+                = "INSERT INTO `kish_admin` (`seq`) VALUES (?);";
+        return jdbcTemplate.update(query, seq);
     }
 
-    public int removeAdmin(String deviceID){
-        String query = "DELETE FROM `kish_admin` WHERE `device_id` = ?";
-        return jdbcTemplate.update(query, deviceID);
+    public int removeAdmin(String seq){
+        String query = "DELETE FROM `kish_admin` WHERE `seq` = ?";
+        return jdbcTemplate.update(query, seq);
     }
 
-    public boolean isAdmin(String deviceID){
-        String query
-                = "SELECT * FROM `kish_admin` " +
-                "WHERE `device_id` = '" + deviceID + "'";
-        return jdbcTemplate.queryForList(query).size() > 0;
+    public boolean isAdmin(String seq){
+        String query = "SELECT * FROM `kish_admin` WHERE `seq`=?";
+        return jdbcTemplate.queryForList(query, seq).size() > 0;
     }
 
     public List<String> getDeviceIdByTopic(String topic){
@@ -144,7 +142,7 @@ public class KishDAO {
                 "AND '" + endDate + "'";
         return jdbcTemplate.query(query, new LunchMenuMapper());
     }
-    
+
     public void updateLunchMenus(boolean async, ArrayList<LunchMenu> list){
         if(async) {
             updateLunchMenus(false, list);
@@ -164,5 +162,34 @@ public class KishDAO {
         }
 
         jdbcTemplate.batchUpdate(query, params);
+    }
+
+    public void registerUser(String seq, String fcm) {
+        String sql = "INSERT INTO `kish_users` SELECT NULL,?,? FROM DUAL" +
+                " WHERE NOT EXISTS (SELECT * FROM `kish_users` WHERE `user_id` = ? AND `fcm_token` = ?);";
+
+        jdbcTemplate.update(sql, seq, fcm, seq, fcm);
+    }
+
+    public boolean isValidUser(String seq, String fcm) {
+        List<String> fcmList = this.getUserFcm(seq);
+
+        if (fcmList.contains(fcm)) {    // 유저의 계정에 등록된 fcm일 경우
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public List<String> getUserFcm(String seq) {
+        String sql = "SELECT * FROM `kish_users` WHERE `user_id`=?";
+        List<Map<String, Object>> items = jdbcTemplate.queryForList(sql, seq);
+
+        ArrayList<String> fcmList = new ArrayList<>();
+        for (Map<String, Object> item : items) {
+            fcmList.add((String) item.get("fcm_token"));
+        }
+
+        return fcmList;
     }
 }

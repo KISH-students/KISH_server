@@ -25,6 +25,13 @@ public class TableManager{
         this.addTable(new ExamTable());
         this.addTable(new LunchTable());
         this.addTable(new KishMenuInfoTable());
+        this.addTable(new KishUsersTable());
+        this.addTable(new BambooPostsTable());
+        this.addTable(new BambooCommentsTable());
+        this.addTable(new BambooPostLikesTable());
+        this.addTable(new BambooCommentLikesTable());
+        this.addTable(new BambooPostBackupTable());
+        this.addTable(new BambooCommentBackupTable());
     }
 
     public void checkAllTable(){
@@ -34,20 +41,20 @@ public class TableManager{
     }
 
     public void checkTable(Table table){
-        MainLogger.info("DB 테이블 확인 중 : " + table.getName());
-        String tableExitQuery = "SHOW TABLES LIKE '" + table.getName() + "'";
+        MainLogger.info("DB 테이블 확인 중 : " + table.getTableName());
+        String tableExitQuery = "SHOW TABLES LIKE '" + table.getTableName() + "'";
 
         if(jdbcTemplate.queryForList(tableExitQuery).size() < 1){
-            MainLogger.info("새 table 생성 중 : " + table.getName());
+            MainLogger.info("새 table 생성 중 : " + table.getTableName());
             jdbcTemplate.execute(table.getCreateQuery());
         }
     }
 
     public void addTable(Table table){
-        this.tables.put(table.getName(), table);
+        this.tables.put(table.getTableName(), table);
     }
 
     public void removeTable(Table table){
-        this.tables.remove(table.getName());
+        this.tables.remove(table.getTableName());
     }
 }
