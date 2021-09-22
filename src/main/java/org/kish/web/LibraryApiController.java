@@ -81,7 +81,7 @@ public class LibraryApiController {
     }
 
     @PostMapping(value = "/login")
-    public @ResponseBody String login(@RequestParam String uuid, @RequestParam String fcm,
+    public @ResponseBody String login(@RequestParam String uuid, @RequestParam(required = false, defaultValue = "") String fcm,
                                       @RequestParam String id, @RequestParam String pwd){
         String parameters;
         parameters = "REQ_URL=";
@@ -93,18 +93,22 @@ public class LibraryApiController {
             return serviceTerminated("3");
         }
 
-        String seq = "";
-        String jsonResponse = response.getResponse();
-        Object resultCode = gson.fromJson(jsonResponse, HashMap.class).get("result");
-        if ("0".equals(String.valueOf(resultCode))) {
-            seq = (String) getInfo(uuid).get("seq");
-            kishDAO.registerUser(seq, fcm);
-        }
+        if (!fcm.isEmpty()) {   // 신버전
+            String seq = "";
+            String jsonResponse = response.getResponse();
+            Object resultCode = gson.fromJson(jsonResponse, HashMap.class).get("result");
+            if ("0".equals(String.valueOf(resultCode))) {
+                seq = (String) getInfo(uuid).get("seq");
+                kishDAO.registerUser(seq, fcm);
+            }
 
-        HashMap map = gson.fromJson(jsonResponse, HashMap.class);
-        map.put("seq", seq);
-        map.put("admin", kishDAO.isAdmin(seq));
-        return gson.toJson(map);
+            HashMap map = gson.fromJson(jsonResponse, HashMap.class);
+            map.put("seq", seq);
+            map.put("admin", kishDAO.isAdmin(seq));
+            return gson.toJson(map);
+        } else {    // 구버전 대응
+            return response.getResponse();
+        }
     }
 
     @RequestMapping(value = "/getInfo", method = RequestMethod.GET)
