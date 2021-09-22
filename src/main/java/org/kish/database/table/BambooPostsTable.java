@@ -9,6 +9,6 @@ public class BambooPostsTable extends Table{
                         "    `bamboo_author` VARCHAR(500) NOT NULL,\n" +
                         "    `bamboo_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n" +
                         "    PRIMARY KEY(`bamboo_id`)\n" +
-                        ") ENGINE = InnoDB;");
+                        ") ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;");
     }
 }

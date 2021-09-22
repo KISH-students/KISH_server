@@ -14,6 +14,6 @@ public class BambooCommentsTable extends Table{
                         "    `is_reply` BOOLEAN NOT NULL,\n" +
                         "    `is_facebook_user` BOOLEAN NOT NULL,\n" +
                         "    PRIMARY KEY(`comment_id`)\n" +
-                        ") ENGINE = InnoDB;");
+                        ") ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;");
     }
 }
