@@ -3,6 +3,7 @@ package org.kish.web;
 import com.google.gson.Gson;
 import org.kish.database.BambooDao;
 import org.kish.database.KishDAO;
+import org.kish.manager.FacebookApiManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,6 +65,14 @@ public class BambooApiController {
         if (bambooDao.writePost(seq, content)) {
             response.put("success", true);
             response.put("message", "성공적으로 글을 게시하였습니다.");
+
+            StringBuilder pagePostContentBuilder = new StringBuilder();
+            pagePostContentBuilder.append("#").append(bambooDao.getPostId(seq, content)).append("번째_익명글")
+                    .append("\n\n").append(content).append("\n.\n.\n------------------------\n")
+                    .append("하노이한국국제학교 앱에서 \"익명\" 댓글과 글을 확인할 수 있어요👻");
+            Runnable runnable = () -> FacebookApiManager.writePagePost(pagePostContentBuilder.toString());
+            runnable.run();     // 다른 스레드에서 실행합니다.
+
         } else {
             response.put("success", false);
             response.put("message", "서버 오류입니다.");

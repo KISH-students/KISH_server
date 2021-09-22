@@ -75,12 +75,17 @@ public class BambooDao {
     public boolean writePost(String author, String content) {
         String sql = "INSERT INTO `bamboo_posts` (`bamboo_id`, `bamboo_content`, `bamboo_author`, `bamboo_date`) VALUES (NULL, ?, ?, CURRENT_TIMESTAMP);";
         try {
-            jdbcTemplate.update(sql, content, author);
-            return true;
+            return (jdbcTemplate.update(sql, content, author) == 1);
         } catch (Exception e) {
             MainLogger.error(e);
             return false;
         }
+    }
+
+    public int getPostId (String seq, String content) {
+        String sql = "SELECT `bamboo_id` FROM `bamboo_posts` WHERE `bamboo_author`=? AND `bamboo_content`=?";
+        List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, seq, content);
+        return (int) result.get(result.size() - 1).get("bamboo_id");      // 가장 최근 글
     }
 
     public Map<String, Object> getPost(String seq, int postId) {

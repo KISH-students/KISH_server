@@ -20,7 +20,10 @@ public enum ConfigOption {
     JOD_PORT("jod_converter_port", 2002L),
 
     RESOURCE_PATH("resource_path", "./resource/"),
-    DOWNLAOD_BASE_URL("download_base_url", "http://hanoischool.net/");
+    DOWNLAOD_BASE_URL("download_base_url", "http://hanoischool.net/"),
+
+    FACEBOOT_PAGE_ID("facebook_page_id", ""),
+    FACEBOOT_PAGE_ACCESS_TOKEN("facebook_page_access_token", "");
 
     private final String key;
     private final Object defValue;
