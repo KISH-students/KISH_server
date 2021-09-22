@@ -21,20 +21,33 @@ public class BambooDao {
     }
 
     public String getDisplayName(String seq, int postId) {
-        String displayName;
-        HashSet<String> authors = new HashSet<>();
-        String sql = "SELECT `comment_author_id`, `comment_author_displayname` FROM `bamboo_comments` WHERE `post_id` = ?";
+        final String AUTHOR = "작성자";
 
-        List<Map<String, Object>> comments = jdbcTemplate.queryForList(sql, postId);
-        for (Map<String, Object> comment : comments) {
-            String authorId = (String) comment.get("comment_author_id");
-            if(seq.equals(authorId)) {
-                return (String) comment.get("comment_author_displayname");
+        String sql = "SELECT `bamboo_author` FROM `bamboo_posts` WHERE bamboo_id = ?";
+        Map<String, Object> post = jdbcTemplate.queryForList(sql, postId).get(0);
+        if (post != null) {
+            if (seq.equals(post.get("bamboo_author"))) {
+                return AUTHOR;
             }
-            authors.add(authorId);
         }
 
-        return "익명 " + authors.size();
+        HashSet<String> writers = new HashSet<>();  // 댓글 작성자 set
+        sql = "SELECT `comment_author_id`, `comment_author_displayname` FROM `bamboo_comments` WHERE `post_id` = ?";
+        List<Map<String, Object>> comments = jdbcTemplate.queryForList(sql, postId);    // 게시물 댓글 쿼리
+
+        for (Map<String, Object> comment : comments) {  // 해당 게시물에 쓰여진 모든 댓글 확인
+            String displayName = (String) comment.get("comment_author_displayname");    // 캐시된 이름
+            String authorId = (String) comment.get("comment_author_id");    // 작성자 seq
+
+            if(seq.equals(authorId)) {  // 이미 번호를 부여 받은 경우
+                return displayName;
+            }
+            if (!AUTHOR.equals(displayName)) {  // 작성자가 아닌 경우에만 카운트
+                writers.add(authorId);
+            }
+        }
+
+        return "익명 " + writers.size();
     }
 
     public List<Map<String, Object>> getPosts(int page) {
