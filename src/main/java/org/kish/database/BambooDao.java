@@ -8,8 +8,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.math.BigInteger;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Repository
 public class BambooDao {
@@ -141,7 +143,7 @@ public class BambooDao {
         sql = "INSERT INTO bamboo_comment_backup SELECT * FROM bamboo_comments WHERE `comment_id`=?";
         jdbcTemplate.update(sql, commentId);
 
-        sql = "UPDATE `bamboo_comments` SET `comment_content` = '삭제된 댓글입니다.' WHERE `comment_id`=?";
+        sql = "UPDATE `bamboo_comments` SET `comment_content` = '' WHERE `comment_id`=?";
         jdbcTemplate.update(sql, commentId);
     }
 
