@@ -2,11 +2,13 @@ package org.kish.database;
 
 import org.kish.KishServer;
 import org.kish.MainLogger;
+import org.kish.manager.FacebookApiManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.math.BigInteger;
 import java.util.*;
 
 @Repository
@@ -72,14 +74,21 @@ public class BambooDao {
         return result;
     }
 
-    public boolean writePost(String author, String title, String content) {
+    public int writePost(String author, String title, String content) {
         String sql = "INSERT INTO `bamboo_posts` (`bamboo_id`, `bamboo_title`, `bamboo_content`, `bamboo_author`, `bamboo_date`) VALUES (NULL, ?, ?, ?, CURRENT_TIMESTAMP);";
         try {
-            return (jdbcTemplate.update(sql, title, content, author) == 1);
+            jdbcTemplate.update(sql, title, content, author);
+            String tmp = String.valueOf(jdbcTemplate.queryForList("SELECT LAST_INSERT_ID();").get(0).get("LAST_INSERT_ID()"));
+            return Integer.parseInt(tmp);
         } catch (Exception e) {
             MainLogger.error(e);
-            return false;
+            return -1;
         }
+    }
+
+    public void registerFacebookPost(int bambooId, String fbPostId) {
+        String sql = "INSERT INTO `bamboo_facebook_posts` (`bamboo_id`, `facebook_id`) VALUES (?, ?);";
+        jdbcTemplate.update(sql, bambooId, fbPostId);
     }
 
     @Deprecated
@@ -103,7 +112,13 @@ public class BambooDao {
     }
 
     public void deletePost(String seq, int postId) {
-        String sql = "SELECT `bamboo_id` FROM `bamboo_posts` WHERE `bamboo_author`=? AND `bamboo_id`=?";
+        String sql = "SELECT `facebook_id` FROM `bamboo_facebook_posts` WHERE `bamboo_id` = ?";
+        List<Map<String, Object>> facebookPostList = jdbcTemplate.queryForList(sql, postId);
+        if (facebookPostList.size() > 0) {
+            FacebookApiManager.deletePost((String) facebookPostList.get(0).get("facebook_id"));
+        }
+
+        sql = "SELECT `bamboo_id` FROM `bamboo_posts` WHERE `bamboo_author`=? AND `bamboo_id`=?";
         if (!kishDAO.isAdmin(seq)) {
             List temp = jdbcTemplate.queryForList(sql, seq, postId);
             if (temp.isEmpty()) return;

@@ -1,6 +1,7 @@
 package org.kish.web;
 
 import com.google.gson.Gson;
+import org.kish.MainLogger;
 import org.kish.database.BambooDao;
 import org.kish.database.KishDAO;
 import org.kish.manager.FacebookApiManager;
@@ -62,7 +63,8 @@ public class BambooApiController {
             response.put("success", false);
             response.put("message", "너무 짧거나 깁니다");
         }
-        if (bambooDao.writePost(seq, title, content)) {
+        int bambooPostId = bambooDao.writePost(seq, title, content);
+        if (bambooPostId != -1) {
             response.put("success", true);
             response.put("message", "성공적으로 글을 게시하였습니다.");
 
@@ -70,9 +72,13 @@ public class BambooApiController {
             sb.append(title).append("\n\n")
                     .append(content).append("\n.\n.\n------------------------\n")
                     .append("하노이한국국제학교 앱에서 \"익명\" 댓글과 글을 확인할 수 있어요👻");
-            Runnable runnable = () -> FacebookApiManager.writePagePost(sb.toString());
+            Runnable runnable = () -> {
+                String postId = FacebookApiManager.writePagePost(sb.toString());
+                if (postId.length() > 4) {
+                    bambooDao.registerFacebookPost(bambooPostId, postId);
+                }
+            };
             runnable.run();     // 다른 스레드에서 실행합니다.
-
         } else {
             response.put("success", false);
             response.put("message", "서버 오류입니다.");
@@ -98,6 +104,7 @@ public class BambooApiController {
         }
         response.put("success", true);
         response.put("message", "요청이 처리되었습니다");
+        MainLogger.info("게시글 : " + postId + "가 삭제 되었습니다.");
         return gson.toJson(response);
     }
 
@@ -118,6 +125,7 @@ public class BambooApiController {
         }
         response.put("success", true);
         response.put("message", "요청이 처리되었습니다");
+        MainLogger.info("게시글 : " + commentId + "가 삭제 되었습니다.");
         return gson.toJson(response);
     }
 
