@@ -49,7 +49,7 @@ public class BambooApiController {
     @ResponseBody
     @RequestMapping("/writePost")
     public String writePost(@RequestParam String seq, @RequestParam String fcm,
-                            @RequestParam String content) {
+                            @RequestParam String title, @RequestParam String content) {
         // seq = 대출증 id
         LinkedHashMap<String, Object> response = new LinkedHashMap<>();
         if (!kishDAO.isValidUser(seq, fcm)) {
@@ -62,15 +62,15 @@ public class BambooApiController {
             response.put("success", false);
             response.put("message", "너무 짧거나 깁니다");
         }
-        if (bambooDao.writePost(seq, content)) {
+        if (bambooDao.writePost(seq, title, content)) {
             response.put("success", true);
             response.put("message", "성공적으로 글을 게시하였습니다.");
 
-            StringBuilder pagePostContentBuilder = new StringBuilder();
-            pagePostContentBuilder.append("#").append(bambooDao.getPostId(seq, content)).append("번째_익명글")
-                    .append("\n\n").append(content).append("\n.\n.\n------------------------\n")
+            StringBuilder sb = new StringBuilder();
+            sb.append(title).append("\n\n")
+                    .append(content).append("\n.\n.\n------------------------\n")
                     .append("하노이한국국제학교 앱에서 \"익명\" 댓글과 글을 확인할 수 있어요👻");
-            Runnable runnable = () -> FacebookApiManager.writePagePost(pagePostContentBuilder.toString());
+            Runnable runnable = () -> FacebookApiManager.writePagePost(sb.toString());
             runnable.run();     // 다른 스레드에서 실행합니다.
 
         } else {

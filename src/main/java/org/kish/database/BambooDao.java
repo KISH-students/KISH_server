@@ -72,16 +72,17 @@ public class BambooDao {
         return result;
     }
 
-    public boolean writePost(String author, String content) {
-        String sql = "INSERT INTO `bamboo_posts` (`bamboo_id`, `bamboo_content`, `bamboo_author`, `bamboo_date`) VALUES (NULL, ?, ?, CURRENT_TIMESTAMP);";
+    public boolean writePost(String author, String title, String content) {
+        String sql = "INSERT INTO `bamboo_posts` (`bamboo_id`, `bamboo_title`, `bamboo_content`, `bamboo_author`, `bamboo_date`) VALUES (NULL, ?, ?, ?, CURRENT_TIMESTAMP);";
         try {
-            return (jdbcTemplate.update(sql, content, author) == 1);
+            return (jdbcTemplate.update(sql, title, content, author) == 1);
         } catch (Exception e) {
             MainLogger.error(e);
             return false;
         }
     }
 
+    @Deprecated
     public int getPostId (String seq, String content) {
         String sql = "SELECT `bamboo_id` FROM `bamboo_posts` WHERE `bamboo_author`=? AND `bamboo_content`=?";
         List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, seq, content);
@@ -89,7 +90,7 @@ public class BambooDao {
     }
 
     public Map<String, Object> getPost(String seq, int postId) {
-        String sql = "SELECT `bamboo_author`, bamboo_id, bamboo_content, bamboo_date FROM `bamboo_posts` WHERE bamboo_id = ?";
+        String sql = "SELECT `bamboo_author`, bamboo_id, bamboo_title, bamboo_content, bamboo_date FROM `bamboo_posts` WHERE bamboo_id = ?";
         Set<String> likers = getPostLikers(postId);
         Map<String, Object> post = jdbcTemplate.queryForList(sql, postId).get(0);
         String author = (String) post.get("bamboo_author");
