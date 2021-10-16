@@ -1,25 +1,26 @@
 package org.kish.web;
 
 import com.google.gson.Gson;
+import org.kish.KishServer;
 import org.kish.MainLogger;
 import org.kish.database.BambooDao;
 import org.kish.database.KishDAO;
+import org.kish.entity.Noti;
 import org.kish.manager.FacebookApiManager;
+import org.kish.manager.FirebaseManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 @RequestMapping("/api/bamboo")
 public class BambooApiController {
     private static final Gson gson = new Gson();
+    @Autowired private KishServer main;
     @Autowired private BambooDao bambooDao;
     @Autowired private KishDAO kishDAO;
 
@@ -68,6 +69,15 @@ public class BambooApiController {
         if (bambooPostId != -1) {
             response.put("success", true);
             response.put("message", "성공적으로 글을 게시하였습니다.");
+
+            HashMap<String, String> data = new HashMap<>();
+            data.put("post_id", Integer.toString(bambooPostId));
+            Noti noti
+                    = new Noti("newBambooPost"
+                    , title + " - 새 익명글"
+                    , content.substring(0, Math.min(content.length(), 32)));
+            noti.setData(data);
+            main.getFirebaseManager().sendFcmWithTopic(noti);
 
             if (fb) {
                 StringBuilder sb = new StringBuilder();
