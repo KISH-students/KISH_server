@@ -71,6 +71,7 @@ public class BambooApiController {
             response.put("message", "성공적으로 글을 게시하였습니다.");
 
             HashMap<String, String> data = new HashMap<>();
+            data.put("type", "newBambooPost");
             data.put("post_id", Integer.toString(bambooPostId));
             Noti noti
                     = new Noti("newBambooPost"
