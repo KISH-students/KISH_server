@@ -59,7 +59,7 @@ public class BambooApiController {
             return gson.toJson(response);
         }
         response.put("success", true);
-        response.put("posts", bambooDao.getMyComments(page, seq));
+        response.put("comments", bambooDao.getMyComments(page, seq));
         return gson.toJson(response);
     }
 
