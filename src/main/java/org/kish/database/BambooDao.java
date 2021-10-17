@@ -139,6 +139,28 @@ public class BambooDao {
         return result;
     }
 
+    public List<Map<String, Object>> getMyPosts(int page, String seq) {
+        String sql = "SELECT * FROM `bamboo_posts` WHERE `bamboo_author`=? ORDER BY `bamboo_date` DESC LIMIT ?, 10";
+        List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, seq, page * 10);
+
+        for (Map<String, Object> map : result) {
+            map.remove("bamboo_author");
+
+            String content = (String) map.get("bamboo_content");
+            if (content.length() > 30) {
+                map.put("bamboo_content", content.substring(0, 30) + "...");
+            }
+            int postId = (Integer) map.get("bamboo_id");
+            int likes = getPostLikeCount(postId);
+            int comments = getCommentCount(postId);
+
+            map.put("like_count", likes);
+            map.put("comment_count", comments);
+        }
+
+        return result;
+    }
+
     public int writePost(String author, String title, String content) {
         String sql = "INSERT INTO `bamboo_posts` (`bamboo_id`, `bamboo_title`, `bamboo_content`, `bamboo_author`, `bamboo_date`) VALUES (NULL, ?, ?, ?, CURRENT_TIMESTAMP);";
         try {
