@@ -258,13 +258,38 @@ public class BambooDao {
     public List<Map<String, Object>> getMyComments(int page, String seq) {
         String sql = "SELECT `post_id`, comment_id, comment_content FROM `bamboo_comments` WHERE comment_author_id=? ORDER BY `comment_date` DESC LIMIT ?, 10";
         List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, seq, page);
+
+        StringBuilder sb = new StringBuilder();
+        HashSet<Integer> postIdSet = new HashSet<>();
+        result.forEach((comment) -> postIdSet.add((int) comment.get("post_id")));
+
+        HashMap<Integer, String> postTitleMap = new HashMap<>();
+        if (postIdSet.size() > 0) {
+            int i = 0;
+            int size = postIdSet.size();
+            for (Integer commentId : postIdSet) {
+                i++;
+                sb.append(commentId);
+                if (i < size) {
+                    sb.append(",");
+                }
+            }
+
+            sql = "SELECT `bamboo_id`, `bamboo_title` FROM `bamboo_posts` WHERE `bamboo_id` IN (" + sb + ");";
+            jdbcTemplate.queryForList(sql).forEach((post) -> {
+                postTitleMap.put((int) post.get("bamboo_id"), (String) post.get("bamboo_title"));
+            });
+        }
+
         Set<Integer> liked = getLikedComments(seq);
 
         if (!result.isEmpty()) {
             for (Map<String, Object> comment : result) {
                 int commentId = (int) comment.get("comment_id");
+                int postId = (int) comment.get("post_id");
                 comment.put("liked", liked.contains(commentId));
                 comment.put("likes", getCommentLikeCount(commentId));
+                comment.put("post_title", postTitleMap.getOrDefault(postId, ""));
             }
         }
 
