@@ -49,6 +49,20 @@ public class BambooApiController {
     }
 
     @ResponseBody
+    @RequestMapping("/myComments")
+    public String getMyComments(@RequestParam int page, @RequestParam String seq, @RequestParam String fcm) {
+        LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+        if (!kishDAO.isValidUser(seq, fcm)) {
+            response.put("success", false);
+            response.put("message", "계정을 확인할 수 없습니다.");
+            return gson.toJson(response);
+        }
+        response.put("success", true);
+        response.put("posts", bambooDao.getMyComments(page, seq));
+        return gson.toJson(response);
+    }
+
+    @ResponseBody
     @RequestMapping("/notification")
     public String enableNotification(@RequestParam String seq, @RequestParam String fcm, @RequestParam boolean enable) {
         bambooDao.toggleNotification(enable, seq, fcm);
