@@ -44,6 +44,7 @@ public class BambooApiController {
             response.put("message", "계정을 확인할 수 없습니다.");
             return gson.toJson(response);
         }
+        response.put("success", true);
         response.put("posts", bambooDao.getMyPosts(page, seq));
         return gson.toJson(response);
     }
