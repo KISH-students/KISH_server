@@ -8,10 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Repository
 public class BambooDao {
@@ -22,6 +19,72 @@ public class BambooDao {
     public BambooDao(DataSource dataSource){
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         KishServer.jdbcTemplate = this.jdbcTemplate;
+    }
+
+    public void toggleNotification(boolean enable, String seq, String fcm) {
+        String sql = "UPDATE `kish_users` SET `bamboo_noti`=? WHERE `user_id`=? AND `fcm_token`=?;";
+        jdbcTemplate.update(sql, enable, seq, fcm);
+    }
+
+    /**
+     *
+     * @param commentId
+     * @return fcm 셋
+     */
+    public List<String> getNotificationReceivers(int commentId) {
+        HashSet<String> receivers = new HashSet<>();
+        int postId;
+        int parentCommentId;
+        String author;
+        boolean isReply;
+
+        String sql = "SELECT `post_id`,`is_reply`,`comment_parent_id`,`comment_author_id` FROM `bamboo_comments` WHERE `comment_id`=?";
+        Map<String, Object> comment = jdbcTemplate.queryForList(sql, commentId).get(0);
+        if (comment == null) {
+            return new ArrayList<>();
+        }
+        postId = (int) comment.get("post_id");
+        isReply = (boolean) comment.get("is_reply");
+        author = (String) comment.get("comment_author_id");
+        parentCommentId = (int) comment.get("comment_parent_id");
+
+        sql = "SELECT `bamboo_author` FROM `bamboo_posts` WHERE `bamboo_id`=?";
+        Map<String, Object> post = jdbcTemplate.queryForList(sql, postId).get(0);
+        if(post == null) {
+            return new ArrayList<>();
+        }
+        String postAuthor = (String) post.get("bamboo_author");
+        if (!author.equals(postAuthor)) {
+            receivers.add(postAuthor);  // 글 작성자
+        }
+
+        if (isReply) {
+            sql = "SELECT `comment_parent_id` FROM `bamboo_comments` WHERE `comment_parent_id`=?";
+            List<Map<String, Object>> participants = jdbcTemplate.queryForList(sql, parentCommentId);
+            for (Map<String, Object> participant : participants) {
+                String id = (String) participant.get("comment_parent_id");
+                if (!author.equals(id)) receivers.add(id);
+                receivers.add(id);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        int size = receivers.size();
+        for (String receiver : receivers) {
+            i++;
+            sb.append('"').append(receiver).append('"');
+            if (i < size) sb.append(",");
+        }
+
+        ArrayList<String> fcmTokens = new ArrayList<>();
+        sql = "SELECT `fcm_token` FROM `kish_users` WHERE `user_id` IN (" + sb + ") AND `bamboo_noti`=1";
+        List<Map<String, Object>> receiverInfo = jdbcTemplate.queryForList(sql);
+        for (Map<String, Object> receiver : receiverInfo) {
+            fcmTokens.add((String) receiver.get("fcm_token"));
+        }
+
+        return fcmTokens;
     }
 
     public String getDisplayName(String seq, int postId) {
@@ -197,7 +260,7 @@ public class BambooDao {
         return jdbcTemplate.queryForList(sql, postId).size();
     }
 
-    public boolean addComment(String seq, int postId, String content, boolean facebook) {
+    public int addComment(String seq, int postId, String content, boolean facebook) {
         try {
             String sql = "INSERT INTO `bamboo_comments`(\n" +
                     "    `comment_id`,\n" +
@@ -224,9 +287,10 @@ public class BambooDao {
 
             String displayName = getDisplayName(seq, postId);
             jdbcTemplate.update(sql, postId, content, seq, displayName, facebook);
-            return true;
+            String tmp = String.valueOf(jdbcTemplate.queryForList("SELECT LAST_INSERT_ID();").get(0).get("LAST_INSERT_ID()"));
+            return Integer.parseInt(tmp);
         } catch (Exception e) {
-            return false;
+            return -1;
         }
     }
 

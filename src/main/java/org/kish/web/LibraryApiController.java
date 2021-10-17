@@ -111,6 +111,12 @@ public class LibraryApiController {
         }
     }
 
+    @PostMapping(value = "/logout")
+    public @ResponseBody String logout(@RequestParam String seq, @RequestParam String fcm) {
+        kishDAO.unregisterUser(seq, fcm);
+        return "";
+    }
+
     @RequestMapping(value = "/getInfo", method = RequestMethod.GET)
     public @ResponseBody JSONObject getInfo(@RequestParam String uuid){
         JSONObject json = new JSONObject();

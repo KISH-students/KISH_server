@@ -165,10 +165,15 @@ public class KishDAO {
     }
 
     public void registerUser(String seq, String fcm) {
-        String sql = "INSERT INTO `kish_users` SELECT NULL,?,? FROM DUAL" +
-                " WHERE NOT EXISTS (SELECT * FROM `kish_users` WHERE `user_id` = ? AND `fcm_token` = ?);";
+        String sql = "SELECT * FROM `kish_users` WHERE `user_id` = ? AND `fcm_token` = ?";
+        if (jdbcTemplate.queryForList(sql, seq, fcm).size() > 0) return;
+        sql = "INSERT INTO `kish_users` (`user_id`, `fcm_token`) VALUES (?,?);";
+        jdbcTemplate.update(sql, seq, fcm);
+    }
 
-        jdbcTemplate.update(sql, seq, fcm, seq, fcm);
+    public void unregisterUser(String seq, String fcm) {
+        String sql = "DELETE FROM `kish_users` WHERE `user_id`=? AND `fcm_token`=?";
+        jdbcTemplate.update(sql, seq, fcm);
     }
 
     public boolean isValidUser(String seq, String fcm) {

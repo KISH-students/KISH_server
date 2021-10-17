@@ -93,6 +93,45 @@ public class FirebaseManager {
         firebaseMessaging.sendAsync(message);
     }
 
+    /**
+     *
+     * @param notification
+     * @param receivers(fcm)
+     */
+    public void sendFcmForSpecificReceivers(Noti notification, List<String> receivers) {
+        if(!isReady) {
+            MainLogger.warn("Firebase is not ready.");
+            return;
+        }
+        for (String receiver : receivers) {
+            MainLogger.info(receiver);
+        }
+        if (receivers.isEmpty()) return;
+        MainLogger.info(receivers.size() + "명에게 메세지 보냄.");
+
+        FirebaseMessaging firebaseMessaging = FirebaseMessaging.getInstance();
+
+        MulticastMessage message = MulticastMessage.builder()
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setTtl(3600 * 1000)
+                        .setPriority(notification.getPriority())
+                        .setNotification(AndroidNotification.builder()
+                                .setColor(notification.getColor())
+                                .build())
+                        .build())
+                .setNotification(
+                        new Notification(notification.getTitle()
+                                , notification.getContent()))
+                .putAllData(notification.getData())
+                .addAllTokens(receivers)
+                .build();
+        try {
+            firebaseMessaging.sendMulticast(message);
+        } catch (Exception e) {
+            MainLogger.error(e);
+        }
+    }
+
     @Deprecated
     public void sendFcm(Noti notification) {
         if(!isReady) {

@@ -7,7 +7,6 @@ import org.kish.database.BambooDao;
 import org.kish.database.KishDAO;
 import org.kish.entity.Noti;
 import org.kish.manager.FacebookApiManager;
-import org.kish.manager.FirebaseManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,9 +19,13 @@ import java.util.*;
 @RequestMapping("/api/bamboo")
 public class BambooApiController {
     private static final Gson gson = new Gson();
-    @Autowired private KishServer main;
+    private final KishServer main;
     @Autowired private BambooDao bambooDao;
     @Autowired private KishDAO kishDAO;
+
+    public BambooApiController(KishServer kishServer){
+        this.main = kishServer;
+    }
 
     @ResponseBody
     @RequestMapping("/posts")
@@ -30,6 +33,13 @@ public class BambooApiController {
         // page는 0부터 시작
 
         return gson.toJson(bambooDao.getPosts(page));
+    }
+
+    @ResponseBody
+    @RequestMapping("/notification")
+    public String enableNotification(@RequestParam String seq, @RequestParam String fcm, @RequestParam boolean enable) {
+        bambooDao.toggleNotification(enable, seq, fcm);
+        return "";
     }
 
     /**
@@ -158,9 +168,26 @@ public class BambooApiController {
             response.put("success", false);
             response.put("message", "너무 짧거나 깁니다");
         }
-        if (bambooDao.addComment(seq, postId, content, false)) {
+        int commentId = bambooDao.addComment(seq, postId, content, false);
+        if (commentId != -1) {
             response.put("success", true);
             response.put("message", "성공적으로 댓글을 게시하였습니다.");
+
+            Runnable r = () -> {
+                List<String> list = bambooDao.getNotificationReceivers(commentId);
+                String authorName = bambooDao.getDisplayName(seq, postId);
+
+                HashMap<String, String> data = new HashMap<>();
+                data.put("type", "newBambooComment");
+                data.put("comment_id", Integer.toString(commentId));
+                data.put("post_id", Integer.toString(postId));
+
+                Noti noti = new Noti("", authorName + "의 댓글", content.substring(0, Math.min(content.length(), 35)));
+                noti.setData(data);
+                main.getFirebaseManager().sendFcmForSpecificReceivers(noti, list);
+            };
+
+            r.run();
         } else {
             response.put("success", false);
             response.put("message", "서버 오류입니다.");
