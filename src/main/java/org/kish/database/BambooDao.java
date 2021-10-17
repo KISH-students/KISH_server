@@ -59,10 +59,10 @@ public class BambooDao {
         }
 
         if (isReply) {
-            sql = "SELECT `comment_parent_id` FROM `bamboo_comments` WHERE `comment_parent_id`=?";
-            List<Map<String, Object>> participants = jdbcTemplate.queryForList(sql, parentCommentId);
-            for (Map<String, Object> participant : participants) {
-                String id = (String) participant.get("comment_parent_id");
+            sql = "SELECT `comment_author_id` FROM `bamboo_comments` WHERE `comment_parent_id`=?";
+            List<Map<String, Object>> replies = jdbcTemplate.queryForList(sql, parentCommentId);
+            for (Map<String, Object> reply : replies) {
+                String id = (String) reply.get("comment_author_id");
                 if (!author.equals(id)) receivers.add(id);
                 receivers.add(id);
             }
