@@ -256,7 +256,7 @@ public class BambooDao {
     }
 
     public List<Map<String, Object>> getMyComments(int page, String seq) {
-        String sql = "SELECT `post_id`, comment_id, comment_content FROM `bamboo_comments` WHERE comment_author_id=? ORDER BY `comment_date` DESC LIMIT ?, 10";
+        String sql = "SELECT `post_id`, comment_id, comment_content FROM `bamboo_comments` WHERE comment_author_id=? AND NOT comment_content = '' ORDER BY `comment_date` DESC LIMIT ?, 10";
         List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, seq, page);
 
         StringBuilder sb = new StringBuilder();
