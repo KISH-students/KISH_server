@@ -29,13 +29,13 @@ public class BambooDao {
     /**
      *
      * @param commentId
-     * @return fcm 셋
+     * @return seq list
      */
     public List<String> getNotificationReceivers(int commentId) {
         HashSet<String> receivers = new HashSet<>();
         int postId;
         int parentCommentId;
-        String author;
+        String commentAuthor;
         boolean isReply;
 
         String sql = "SELECT `post_id`,`is_reply`,`comment_parent_id`,`comment_author_id` FROM `bamboo_comments` WHERE `comment_id`=?";
@@ -45,47 +45,95 @@ public class BambooDao {
         }
         postId = (int) comment.get("post_id");
         isReply = (boolean) comment.get("is_reply");
-        author = (String) comment.get("comment_author_id");
+        commentAuthor = (String) comment.get("comment_author_id");
         parentCommentId = (int) comment.get("comment_parent_id");
 
-        sql = "SELECT `bamboo_author` FROM `bamboo_posts` WHERE `bamboo_id`=?";
-        Map<String, Object> post = jdbcTemplate.queryForList(sql, postId).get(0);
-        if(post == null) {
+        String postAuthor = getPostAuthor(postId);
+        if(postAuthor.isEmpty()) {
             return new ArrayList<>();
         }
-        String postAuthor = (String) post.get("bamboo_author");
-        if (!author.equals(postAuthor)) {
+        if (!commentAuthor.equals(postAuthor)) {
             receivers.add(postAuthor);  // 글 작성자
         }
 
         if (isReply) {
-            sql = "SELECT `comment_author_id`, `comment_content` FROM `bamboo_comments` WHERE `comment_parent_id`=?";
-            List<Map<String, Object>> replies = jdbcTemplate.queryForList(sql, parentCommentId);
-            for (Map<String, Object> reply : replies) {
-                String id = (String) reply.get("comment_author_id");
-                String content = (String) reply.get("comment_content");
-                if (content.isEmpty()) continue;
-                if (!author.equals(id)) receivers.add(id);
-            }
+            HashSet<String> participantSet = (HashSet<String>) getCommentParticipants(parentCommentId, true);
+            participantSet.remove(commentAuthor);
+            participantSet.remove(postAuthor);
+            receivers.addAll(participantSet);
         }
+        return new ArrayList<>(receivers);
+    }
+
+    public int getParentCommentId(int commentId) {
+        String sql = "SELECT `comment_parent_id` FROM `bamboo_comments` WHERE `comment_id`=?";
+        return (int) jdbcTemplate.queryForList(sql, commentId).get(0).get("comment_parent_id");
+    }
+
+    public String getPostAuthor(int postId) {
+        String sql = "SELECT `bamboo_author` FROM `bamboo_posts` WHERE `bamboo_id`=?";
+        Map<String, Object> post = jdbcTemplate.queryForList(sql, postId).get(0);
+        if (post == null) {
+            return "";
+        }
+        return (String) post.get("bamboo_author");
+    }
+
+    public Set<String> getCommentParticipants(int parentCommentId, boolean notRemoved) {
+        HashSet<String> participants = new HashSet<>();
+
+        String sql = "SELECT `comment_author_id`, `comment_content` FROM `bamboo_comments` WHERE `comment_parent_id`=?";
+        List<Map<String, Object>> replies = jdbcTemplate.queryForList(sql, parentCommentId);
+        for (Map<String, Object> reply : replies) {
+            String id = (String) reply.get("comment_author_id");
+            String content = (String) reply.get("comment_content");
+            if (notRemoved && content.isEmpty()) continue;
+            participants.add(id);
+        }
+
+        return participants;
+    }
+
+    public List<String> getFcmTokensBySeqIds(List<String> seqIds, boolean enabledNoti) {
+        if (seqIds.isEmpty()) return new ArrayList<>();
 
         StringBuilder sb = new StringBuilder();
         int i = 0;
-        int size = receivers.size();
-        for (String receiver : receivers) {
+        int size = seqIds.size();
+        for (String receiver : seqIds) {
             i++;
             sb.append('"').append(receiver).append('"');
             if (i < size) sb.append(",");
         }
 
         ArrayList<String> fcmTokens = new ArrayList<>();
-        sql = "SELECT `fcm_token` FROM `kish_users` WHERE `user_id` IN (" + sb + ") AND `bamboo_noti`=1";
+        String sql = "SELECT `fcm_token` FROM `kish_users` WHERE `user_id` IN (" + sb + ") ";
+        if (enabledNoti) {
+            sql += "AND `bamboo_noti`=1";
+        }
         List<Map<String, Object>> receiverInfo = jdbcTemplate.queryForList(sql);
         for (Map<String, Object> receiver : receiverInfo) {
             fcmTokens.add((String) receiver.get("fcm_token"));
         }
 
         return fcmTokens;
+    }
+
+    public void addNotification(String type, String seq, int post, int comment, String title, String content) {
+        HashSet<String> tmp = new HashSet<>();
+        tmp.add(seq);
+        addNotificationToUsers(type, tmp, post, comment,title, content);
+    }
+
+    public void addNotificationToUsers(String type, Set<String> userSet, int post, int comment, String title, String content) {
+        String sql = "INSERT INTO `bamboo_notification` (`post_id`, `comment_id`, `type`, `title`, `content`, `user`) " +
+                "VALUES (?,?,?,?,?,?);";
+        ArrayList<Object[]> args = new ArrayList<>();
+        for (String user : userSet) {
+            args.add(new Object[]{post, comment, type, title, content, user});
+        }
+
+        jdbcTemplate.batchUpdate(sql, args);
     }
 
     public String getDisplayName(String seq, int postId) {
@@ -356,7 +404,7 @@ public class BambooDao {
         }
     }
 
-    public boolean addReply(String seq, int postId, int parentId, String content, boolean facebook) {
+    public int addReply(String seq, int postId, int parentId, String content, boolean facebook) {
         try {
             String sql = "INSERT INTO `bamboo_comments`(\n" +
                     "    `comment_id`,\n" +
@@ -383,9 +431,10 @@ public class BambooDao {
 
             String displayName = getDisplayName(seq, postId);
             jdbcTemplate.update(sql, postId, content, parentId, seq, displayName, facebook);
-            return true;
+            String tmp = String.valueOf(jdbcTemplate.queryForList("SELECT LAST_INSERT_ID();").get(0).get("LAST_INSERT_ID()"));
+            return Integer.parseInt(tmp);
         } catch (Exception e) {
-            return false;
+            return -1;
         }
     }
 

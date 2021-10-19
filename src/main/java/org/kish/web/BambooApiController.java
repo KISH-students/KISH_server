@@ -201,20 +201,7 @@ public class BambooApiController {
             response.put("success", true);
             response.put("message", "성공적으로 댓글을 게시하였습니다.");
 
-            Runnable r = () -> {
-                List<String> list = bambooDao.getNotificationReceivers(commentId);
-                String authorName = bambooDao.getDisplayName(seq, postId);
-
-                HashMap<String, String> data = new HashMap<>();
-                data.put("type", "newBambooComment");
-                data.put("comment_id", Integer.toString(commentId));
-                data.put("post_id", Integer.toString(postId));
-
-                Noti noti = new Noti("", authorName + "의 댓글", content.substring(0, Math.min(content.length(), 35)));
-                noti.setData(data);
-                main.getFirebaseManager().sendFcmForSpecificReceivers(noti, list);
-            };
-
+            Runnable r = () -> processCommentNotification(false, postId, commentId, seq, content);
             r.run();
         } else {
             response.put("success", false);
@@ -240,9 +227,12 @@ public class BambooApiController {
             response.put("success", false);
             response.put("message", "너무 짧거나 깁니다");
         }
-        if (bambooDao.addReply(seq, postId, parentId, content, false)) {
+        int commentId = bambooDao.addReply(seq, postId, parentId, content, false);
+        if (commentId != -1) {
             response.put("success", true);
             response.put("message", "성공적으로 글을 게시하였습니다.");
+            Runnable r = () -> processCommentNotification(true, postId, commentId, seq, content);
+            r.run();
         } else {
             response.put("success", false);
             response.put("message", "서버 오류입니다.");
@@ -322,5 +312,29 @@ public class BambooApiController {
         }
 
         return gson.toJson(response);
+    }
+
+    public void processCommentNotification(boolean isReply, int postId, int commentId, String seq, String content) {
+        String postAuthor = bambooDao.getPostAuthor(postId);
+        String commentAuthorName = bambooDao.getDisplayName(seq, postId);
+        bambooDao.addNotification("comment_to_my_post", postAuthor, postId, commentId, "작성한 글에 댓글이 달렸어요.", content);
+        if (isReply) {
+            Set<String> participants = bambooDao.getCommentParticipants(bambooDao.getParentCommentId(commentId), true);
+            participants.remove(postAuthor);
+            bambooDao.addNotificationToUsers("replied", participants, postId, commentId, commentAuthorName + "님의 답글", content);
+        }
+
+        List<String> list = bambooDao.getNotificationReceivers(commentId);
+        List<String> fcmList = bambooDao.getFcmTokensBySeqIds(list, true);
+        String authorName = bambooDao.getDisplayName(seq, postId);
+
+        HashMap<String, String> data = new HashMap<>();
+        data.put("type", "newBambooComment");
+        data.put("comment_id", Integer.toString(commentId));
+        data.put("post_id", Integer.toString(postId));
+
+        Noti noti = new Noti("", authorName + "의 댓글", content.substring(0, Math.min(content.length(), 35)));
+        noti.setData(data);
+        main.getFirebaseManager().sendFcmForSpecificReceivers(noti, fcmList);
     }
 }
