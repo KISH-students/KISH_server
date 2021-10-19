@@ -210,6 +210,11 @@ public class BambooDao {
         return result;
     }
 
+    public List<Map<String, Object>> getMyNotification(int page, String seq) {
+        String sql = "SELECT * FROM `bamboo_notification` WHERE `user`=? ORDER BY `date` DESC LIMIT ?, 10";
+        return jdbcTemplate.queryForList(sql, seq, page * 10);
+    }
+
     public int writePost(String author, String title, String content) {
         String sql = "INSERT INTO `bamboo_posts` (`bamboo_id`, `bamboo_title`, `bamboo_content`, `bamboo_author`, `bamboo_date`) VALUES (NULL, ?, ?, ?, CURRENT_TIMESTAMP);";
         try {
