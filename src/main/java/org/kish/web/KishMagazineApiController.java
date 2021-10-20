@@ -330,7 +330,7 @@ public class KishMagazineApiController {
 
         public ArticleV2(File file) {
             String[] tmp = FilenameUtils.getBaseName(file.getName()).replace("^", "\n").split(":");
-            this.setTitle(tmp[0]);
+            this.setTitle(tmp[0].replace("${hidden}", ""));
             if (tmp.length > 1) {
                 this.setAuthor(tmp[1]);
             } else {
