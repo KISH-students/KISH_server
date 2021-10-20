@@ -45,7 +45,7 @@ public class BambooApiController {
             return gson.toJson(response);
         }
         response.put("success", true);
-        response.put("posts", bambooDao.getMyNotification(page, seq));
+        response.put("notification_list", bambooDao.getMyNotification(page, seq));
         return gson.toJson(response);
     }
 
