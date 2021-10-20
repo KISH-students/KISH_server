@@ -331,7 +331,11 @@ public class BambooApiController {
     public void processCommentNotification(boolean isReply, int postId, int commentId, String seq, String content) {
         String postAuthor = bambooDao.getPostAuthor(postId);
         String commentAuthorName = bambooDao.getDisplayName(seq, postId);
-        bambooDao.addNotification("comment_to_my_post", postAuthor, postId, commentId, "작성한 글에 댓글이 달렸어요.", content);
+
+        if (!postAuthor.equals(seq)) {
+            bambooDao.addNotification("comment_to_my_post", postAuthor, postId, commentId, "작성한 글에 댓글이 달렸어요.", content);
+        }
+
         if (isReply) {
             Set<String> participants = bambooDao.getCommentParticipants(bambooDao.getParentCommentId(commentId), true);
             participants.remove(postAuthor);
@@ -341,6 +345,10 @@ public class BambooApiController {
         List<String> list = bambooDao.getNotificationReceivers(commentId);
         List<String> fcmList = bambooDao.getFcmTokensBySeqIds(list, true);
         String authorName = bambooDao.getDisplayName(seq, postId);
+
+        if (seq.equals(postAuthor)) {
+            list.remove(seq);
+        }
 
         HashMap<String, String> data = new HashMap<>();
         data.put("type", "newBambooComment");
