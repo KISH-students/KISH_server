@@ -170,7 +170,7 @@ public class BambooApiController {
         }
         response.put("success", true);
         response.put("message", "요청이 처리되었습니다");
-        MainLogger.info("게시글 : " + postId + "가 삭제 되었습니다.");
+        MainLogger.info("게시글이 삭제됨 : " + postId);
         return gson.toJson(response);
     }
 
@@ -191,7 +191,7 @@ public class BambooApiController {
         }
         response.put("success", true);
         response.put("message", "요청이 처리되었습니다");
-        MainLogger.info("게시글 : " + commentId + "가 삭제 되었습니다.");
+        MainLogger.info("댓글에 삭제됨 : " + commentId);
         return gson.toJson(response);
     }
 
