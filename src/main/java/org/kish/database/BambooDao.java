@@ -179,7 +179,7 @@ public class BambooDao {
             }
             int postId = (Integer) map.get("bamboo_id");
             int likes = getPostLikeCount(postId);
-            int comments = getCommentCount(postId);
+            int comments = getCommentCount(postId, true);
 
             map.put("like_count", likes);
             map.put("comment_count", comments);
@@ -201,7 +201,7 @@ public class BambooDao {
             }
             int postId = (Integer) map.get("bamboo_id");
             int likes = getPostLikeCount(postId);
-            int comments = getCommentCount(postId);
+            int comments = getCommentCount(postId, true);
 
             map.put("like_count", likes);
             map.put("comment_count", comments);
@@ -370,8 +370,11 @@ public class BambooDao {
         return result;
     }
 
-    public int getCommentCount(int postId) {
-        String sql = "SELECT comment_id FROM `bamboo_comments` WHERE post_id = ?";
+    public int getCommentCount(int postId, boolean excludeRemovedComment) {
+        String sql = "SELECT comment_id FROM `bamboo_comments` WHERE post_id = ? ";
+        if (excludeRemovedComment) {
+            sql += "AND NOT comment_content = ''";
+        }
         return jdbcTemplate.queryForList(sql, postId).size();
     }
 
