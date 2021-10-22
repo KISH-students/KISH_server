@@ -103,9 +103,6 @@ public class FirebaseManager {
             MainLogger.warn("Firebase is not ready.");
             return;
         }
-        for (String receiver : receivers) {
-            MainLogger.info(receiver);
-        }
         if (receivers.isEmpty()) return;
         MainLogger.info(receivers.size() + "명에게 메세지 보냄.");
 
