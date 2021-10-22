@@ -134,9 +134,9 @@ public class BambooApiController {
 
             if (fb) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(title).append("\n\n")
+                sb.append("#").append(bambooPostId).append("번째익명글\n").append(title).append("\n\n")
                         .append(content).append("\n.\n.\n------------------------\n")
-                        .append("하노이한국국제학교 앱에서 \"익명\" 댓글과 글을 확인할 수 있어요👻");
+                        .append("하노이한국국제학교 앱에서 익명으로 작성되었습니다.\n하노이한국국제학교 앱에서 익명으로 글과 댓글을 등록해보세요👻");
                 Runnable runnable = () -> {
                     String postId = FacebookApiManager.writePagePost(sb.toString());
                     if (postId.length() > 4) {
