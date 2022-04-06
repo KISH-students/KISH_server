@@ -42,7 +42,16 @@ public class KishServer {
     public static JdbcTemplate jdbcTemplate = null;
     public static File RESOURCE_PATH = null;
 
+    public static boolean silent = false;
+
     public static void main(String[] args) {
+        for (String arg : args) {
+            if ("--silent".equals(arg)) {
+                silent = true;
+                MainLogger.warn("새 글 알림을 보내지 않습니다!");
+            }
+        }
+
         /* Kish server configuration */
         CONFIG = new Config("kish_config.json");
 
